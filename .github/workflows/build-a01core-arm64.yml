@@ -48,6 +48,8 @@ jobs:
           scripts/config --disable COMMON_CLK_MT8173
           scripts/config --disable COMMON_CLK_MT8183
           scripts/config --disable COMMON_CLK_MT8168
+          scripts/config --disable MOUSE_PS2_SYNAPTICS
+          scripts/config --disable MOUSE_PS2_SYNAPTICS_SMBUS
           scripts/config --disable SEC_DEBUG
           grep -q 'mt6739.dtb' arch/arm64/boot/dts/mediatek/Makefile || \
             sed -i '/dtb-$(CONFIG_ARCH_MEDIATEK) += mt6797-evb.dtb/a dtb-$(CONFIG_ARCH_MEDIATEK) += mt6739.dtb' \
@@ -59,7 +61,7 @@ jobs:
           make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- olddefconfig
           {
             echo "## Kernel configuration"
-            grep -E '^(CONFIG_ARM64|CONFIG_ARCH_MEDIATEK|CONFIG_MACH_MT6739|CONFIG_COMMON_CLK_MT6739|CONFIG_COMMON_CLK_MT6797|CONFIG_COMMON_CLK_MT8173|CONFIG_COMMON_CLK_MT8183|CONFIG_MEDIATEK_SOLUTION|CONFIG_MTK_PLATFORM|CONFIG_MTK_RAM_CONSOLE|CONFIG_UCLAMP_TASK|CONFIG_UCLAMP_TASK_GROUP|CONFIG_UCLAMP_MAP_OPP|CONFIG_SCHED_TUNE|CONFIG_SEC_DEBUG)=' .config || true
+            grep -E '^(CONFIG_ARM64|CONFIG_ARCH_MEDIATEK|CONFIG_MACH_MT6739|CONFIG_COMMON_CLK_MT6739|CONFIG_COMMON_CLK_MT6797|CONFIG_COMMON_CLK_MT8173|CONFIG_COMMON_CLK_MT8183|CONFIG_MEDIATEK_SOLUTION|CONFIG_MTK_PLATFORM|CONFIG_MTK_RAM_CONSOLE|CONFIG_UCLAMP_TASK|CONFIG_UCLAMP_TASK_GROUP|CONFIG_UCLAMP_MAP_OPP|CONFIG_SCHED_TUNE|CONFIG_MOUSE_PS2_SYNAPTICS|CONFIG_SEC_DEBUG)=' .config || true
             echo
             echo "Source commit: $SOURCE_COMMIT"
           } | tee ../configuration-summary.txt
@@ -68,7 +70,7 @@ jobs:
         working-directory: kernel
         run: |
           set +e
-          make -j2 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- KCFLAGS="-Wno-error=array-bounds -Wno-error=sizeof-array-div -Wno-error=stringop-overflow" Image dtbs > ../arm64-build.log 2>&1
+          make -j2 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- KCFLAGS="-Wno-error=array-bounds -Wno-error=sizeof-array-div -Wno-error=stringop-overflow -Wno-error=maybe-uninitialized" Image dtbs > ../arm64-build.log 2>&1
           result=$?
           set -e
           echo "BUILD_EXIT_CODE=$result" >> "$GITHUB_ENV"
