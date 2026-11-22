@@ -1,0 +1,92 @@
+name: A01 Core ARM64 kernel feasibility build
+
+on:
+  push:
+    paths:
+      - ".github/workflows/build-a01core-arm64.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  arm64-kernel:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 90
+    steps:
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            bc bison build-essential flex gcc-aarch64-linux-gnu \
+            git libelf-dev libncurses-dev libssl-dev make python3
+          df -h /
+
+      - name: Fetch A01 Core kernel source
+        run: |
+          git clone --depth=1 --branch master \
+            https://github.com/almondnguyen/android_kernel_samsung_a01core.git kernel
+          cd kernel
+          echo "SOURCE_COMMIT=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+          git log -1 --oneline
+
+      - name: Configure ARM64 MT6739 build
+        working-directory: kernel
+        run: |
+          make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- defconfig
+          scripts/config --enable ARCH_MEDIATEK
+          scripts/config --enable MACH_MT6739
+          scripts/config --disable SEC_DEBUG
+          grep -q 'mt6739.dtb' arch/arm64/boot/dts/mediatek/Makefile || \
+            sed -i '/dtb-$(CONFIG_ARCH_MEDIATEK) += mt6797-evb.dtb/a dtb-$(CONFIG_ARCH_MEDIATEK) += mt6739.dtb' \
+              arch/arm64/boot/dts/mediatek/Makefile
+          make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- olddefconfig
+          {
+            echo "## Kernel configuration"
+            grep -E '^(CONFIG_ARM64|CONFIG_ARCH_MEDIATEK|CONFIG_MACH_MT6739|CONFIG_SEC_DEBUG)=' .config || true
+            echo
+            echo "Source commit: $SOURCE_COMMIT"
+          } | tee ../configuration-summary.txt
+
+      - name: Compile ARM64 Image and device trees
+        working-directory: kernel
+        run: |
+          set +e
+          make -j2 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- Image dtbs > ../arm64-build.log 2>&1
+          result=$?
+          set -e
+          echo "BUILD_EXIT_CODE=$result" >> "$GITHUB_ENV"
+          tail -n 100 ../arm64-build.log
+          exit "$result"
+
+      - name: Collect build evidence
+        if: always()
+        run: |
+          mkdir -p artifacts
+          cp -f arm64-build.log artifacts/ 2>/dev/null || true
+          cp -f configuration-summary.txt artifacts/ 2>/dev/null || true
+          if [ -f kernel/.config ]; then cp kernel/.config artifacts/arm64.config; fi
+          if [ -f kernel/arch/arm64/boot/Image ]; then
+            cp kernel/arch/arm64/boot/Image artifacts/Image-arm64
+            file artifacts/Image-arm64
+            sha256sum artifacts/Image-arm64 > artifacts/SHA256SUMS.txt
+          fi
+          if [ -f kernel/arch/arm64/boot/dts/mediatek/mt6739.dtb ]; then
+            cp kernel/arch/arm64/boot/dts/mediatek/mt6739.dtb artifacts/
+            file artifacts/mt6739.dtb
+          fi
+          {
+            echo "Build exit code: ${BUILD_EXIT_CODE:-not-started}"
+            echo "Source commit: ${SOURCE_COMMIT:-unknown}"
+            echo "Note: generic MT6739 DTB only; not a device-specific A013M DTB."
+          } > artifacts/RESULT.txt
+          ls -lh artifacts
+
+      - name: Upload build evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: a01core-arm64-kernel-feasibility
+          path: artifacts/*
+          if-no-files-found: warn
+          retention-days: 7
