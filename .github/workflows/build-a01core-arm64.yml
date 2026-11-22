@@ -1,4 +1,4 @@
-﻿name: A01 Core ARM64 kernel feasibility build
+name: A01 Core ARM64 kernel feasibility build
 
 on:
   push:
@@ -37,7 +37,12 @@ jobs:
           scripts/config --enable ARCH_MEDIATEK
           scripts/config --enable MACH_MT6739
           scripts/config --enable COMMON_CLK_MT6739
-          scripts/config --enable MEDIATEK_SOLUTION
+          scripts/config --enable MEDIATEK_SOLUTION          # Match the A01 Core target PMIC stack (MT6357), not generic ARM64 defaults.
+          scripts/config --enable MTK_PMIC_NEW_ARCH
+          scripts/config --enable MTK_PMIC_COMMON
+          scripts/config --enable MTK_PMIC_CHIP_MT6357
+          scripts/config --enable MTK_PMIC_WRAP_HAL
+          scripts/config --enable MTK_PMIC_WRAP
           scripts/config --set-str MTK_PLATFORM "mt6739"
           scripts/config --enable MTK_RAM_CONSOLE
           scripts/config --enable UCLAMP_TASK
@@ -64,7 +69,10 @@ jobs:
           for symbol in COMMON_CLK_MT8168 COMMON_CLK_MT8183; do
             scripts/config --disable "$symbol"
           done
-          if grep -Eq '^CONFIG_(COMMON_CLK_MT8168|COMMON_CLK_MT8183)=y$' .config; then
+          if ! grep -q '^CONFIG_MTK_PMIC_COMMON=y$' .config || ! grep -q '^CONFIG_MTK_PMIC_CHIP_MT6357=y$' .config; then
+            echo "A01 Core MT6357 PMIC configuration is missing" >&2
+            exit 1
+          fi          if grep -Eq '^CONFIG_(COMMON_CLK_MT8168|COMMON_CLK_MT8183)=y$' .config; then
             echo "Unrelated MediaTek clock driver remained enabled" >&2
             exit 1
           fi
