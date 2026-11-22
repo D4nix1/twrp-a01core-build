@@ -47,9 +47,10 @@ jobs:
           grep -q 'mt6739.dtb' arch/arm64/boot/dts/mediatek/Makefile || \
             sed -i '/dtb-$(CONFIG_ARCH_MEDIATEK) += mt6797-evb.dtb/a dtb-$(CONFIG_ARCH_MEDIATEK) += mt6739.dtb' \
               arch/arm64/boot/dts/mediatek/Makefile
-          # The vendor DTBO config generator assumes at least one overlay.
-          # Make its empty-list case produce a valid empty config file.
+          # Work around the empty vendor DTBO config generator case.
           sed -i 's|rm -f .@.tmp|rm -f $@.tmp; touch $@.tmp|' scripts/drvgen/drvgen.mk
+          # The source calls try_to_unmap with two args, but this tree declares three.
+          sed -i 's/try_to_unmap(page, ttu_flags);/try_to_unmap(page, ttu_flags, NULL);/' mm/huge_memory.c
           make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- olddefconfig
           {
             echo "## Kernel configuration"
