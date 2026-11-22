@@ -36,6 +36,9 @@ jobs:
           make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- defconfig
           scripts/config --enable ARCH_MEDIATEK
           scripts/config --enable MACH_MT6739
+          scripts/config --enable MEDIATEK_SOLUTION
+          scripts/config --set-str MTK_PLATFORM "mt6739"
+          scripts/config --enable MTK_RAM_CONSOLE
           scripts/config --disable SEC_DEBUG
           grep -q 'mt6739.dtb' arch/arm64/boot/dts/mediatek/Makefile || \
             sed -i '/dtb-$(CONFIG_ARCH_MEDIATEK) += mt6797-evb.dtb/a dtb-$(CONFIG_ARCH_MEDIATEK) += mt6739.dtb' \
@@ -43,7 +46,7 @@ jobs:
           make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- olddefconfig
           {
             echo "## Kernel configuration"
-            grep -E '^(CONFIG_ARM64|CONFIG_ARCH_MEDIATEK|CONFIG_MACH_MT6739|CONFIG_SEC_DEBUG)=' .config || true
+            grep -E '^(CONFIG_ARM64|CONFIG_ARCH_MEDIATEK|CONFIG_MACH_MT6739|CONFIG_MEDIATEK_SOLUTION|CONFIG_MTK_PLATFORM|CONFIG_MTK_RAM_CONSOLE|CONFIG_SEC_DEBUG)=' .config || true
             echo
             echo "Source commit: $SOURCE_COMMIT"
           } | tee ../configuration-summary.txt
