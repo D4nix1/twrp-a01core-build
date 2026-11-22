@@ -1,4 +1,4 @@
-name: A01 Core ARM64 kernel feasibility build
+﻿name: A01 Core ARM64 kernel feasibility build
 
 on:
   push:
@@ -96,3 +96,4 @@ jobs:
           path: artifacts/*
           if-no-files-found: warn
           retention-days: 7
+
