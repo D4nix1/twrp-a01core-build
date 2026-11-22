@@ -62,7 +62,7 @@ jobs:
         working-directory: kernel
         run: |
           set +e
-          make -j2 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- KCFLAGS=-Wno-error Image dtbs > ../arm64-build.log 2>&1
+          make -j2 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- KCFLAGS="-Wno-error=array-bounds -Wno-error=sizeof-array-div -Wno-error=stringop-overflow" Image dtbs > ../arm64-build.log 2>&1
           result=$?
           set -e
           echo "BUILD_EXIT_CODE=$result" >> "$GITHUB_ENV"
