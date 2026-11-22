@@ -1,4 +1,4 @@
-﻿name: A01 Core ARM64 kernel feasibility build
+name: A01 Core ARM64 kernel feasibility build
 
 on:
   push:
@@ -45,7 +45,7 @@ jobs:
               arch/arm64/boot/dts/mediatek/Makefile
           # The vendor DTBO config generator assumes at least one overlay.
           # Make its empty-list case produce a valid empty config file.
-          sed -i 's/rm -f \\$@.tmp/rm -f $@.tmp; touch $@.tmp/' scripts/drvgen/drvgen.mk
+          sed -i 's|rm -f .@.tmp|rm -f $@.tmp; touch $@.tmp|' scripts/drvgen/drvgen.mk
           make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- olddefconfig
           {
             echo "## Kernel configuration"
@@ -96,4 +96,3 @@ jobs:
           path: artifacts/*
           if-no-files-found: warn
           retention-days: 7
-
